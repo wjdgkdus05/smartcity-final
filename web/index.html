@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>데이터로 진단하는 업무지구의 성공과 실패</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#1a1d27;--surface:#22253a;--border:#2e3248;--pangyo:#4FC3F7;--cheongna:#FF8A65;--accent:#7C83FD;--text:#E8EAF0;--muted:#8B90A0;--font:'Apple SD Gothic Neo','Malgun Gothic',sans-serif;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+.header{padding:10px 20px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.header-title{font-size:14px;font-weight:700;}
+.header-sub{font-size:11px;color:var(--muted);margin-top:1px;}
+.legend-row{display:flex;gap:16px;}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:11px;}
+.legend-dot{width:9px;height:9px;border-radius:50%;}
+.toolbar{display:flex;gap:6px;padding:7px 16px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;align-items:center;flex-wrap:wrap;}
+.toolbar-group{display:flex;gap:5px;align-items:center;padding-right:10px;border-right:1px solid var(--border);}
+.toolbar-group:last-child{border-right:none;}
+.toolbar-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;}
+.btn{padding:4px 11px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:11px;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.btn:hover{color:var(--text);border-color:var(--text);}
+.btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+.btn.active-p{background:var(--pangyo);border-color:var(--pangyo);color:#111;}
+/* 불투명도 슬라이더 */
+.opacity-ctrl{display:flex;align-items:center;gap:8px;}
+.opacity-ctrl input[type=range]{width:80px;height:4px;accent-color:var(--accent);cursor:pointer;}
+.opacity-val{font-size:11px;color:var(--muted);min-width:28px;}
+.main{display:flex;flex:1;overflow:hidden;}
+.side{width:272px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.side-header{padding:11px 15px;border-bottom:1px solid var(--border);font-size:12px;font-weight:600;}
+.side-body{flex:1;overflow-y:auto;padding:12px;}
+.side-body::-webkit-scrollbar{width:4px;}
+.side-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.stat-block{margin-bottom:13px;}
+.stat-block-title{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:7px;}
+.stat-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px;}
+.stat-label{font-size:11px;color:var(--muted);}
+.stat-values{display:flex;gap:10px;}
+.stat-val{font-size:12px;font-weight:600;}
+.stat-val.p{color:var(--pangyo);}
+.stat-val.c{color:var(--cheongna);}
+.legend-block{margin-bottom:13px;}
+.legend-block-title{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:7px;}
+.legend-item-row{display:flex;align-items:center;gap:7px;margin-bottom:5px;font-size:11px;}
+.legend-swatch{width:14px;height:14px;border-radius:3px;flex-shrink:0;}
+.divider{height:1px;background:var(--border);margin:11px 0;}
+.chart-wrap{height:155px;margin-bottom:12px;}
+.chart-title{font-size:11px;color:var(--muted);margin-bottom:5px;}
+.sub-btn-group{display:flex;gap:5px;margin-bottom:10px;}
+.sub-btn{padding:3px 10px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:11px;cursor:pointer;}
+.sub-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+.maps{flex:1;display:grid;grid-template-columns:1fr 1fr;position:relative;overflow:hidden;}
+.maps.single{grid-template-columns:1fr;}
+.map-wrap{position:relative;overflow:hidden;}
+.map-tag{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:999;background:rgba(26,29,39,.92);border:2px solid;padding:4px 14px;border-radius:16px;font-size:11px;font-weight:600;pointer-events:none;white-space:nowrap;}
+.map-tag.p{color:var(--pangyo);border-color:var(--pangyo);}
+.map-tag.c{color:var(--cheongna);border-color:var(--cheongna);}
+#map-p,#map-c{width:100%;height:100%;}
+.map-divider{position:absolute;left:50%;top:0;bottom:0;width:2px;background:var(--border);z-index:400;pointer-events:none;}
+.maps.single .map-divider{display:none;}
+.leaflet-popup-content-wrapper{background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12px;box-shadow:0 4px 20px rgba(0,0,0,.5);}
+.leaflet-popup-tip{background:var(--surface);}
+.popup-title{font-size:13px;font-weight:600;margin-bottom:8px;}
+.popup-row{display:flex;justify-content:space-between;gap:20px;margin-bottom:3px;color:var(--muted);}
+.popup-row span:last-child{color:var(--text);font-weight:500;}
+</style>
+</head>
+<body>
+<div class="header">
+  <div>
+    <div class="header-title">데이터로 진단하는 업무지구의 성공과 실패</div>
+    <div class="header-sub">판교테크노밸리 vs 청라국제업무·금융단지 | 스마트시티 이론과 실제</div>
+  </div>
+  <div class="legend-row">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--pangyo)"></div>판교테크노밸리</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--cheongna)"></div>청라국제업무·금융단지</div>
+  </div>
+</div>
+
+<div class="toolbar">
+  <div class="toolbar-group">
+    <span class="toolbar-label">보기</span>
+    <button class="btn active" onclick="setView('split',this)">나란히</button>
+    <button class="btn" onclick="setView('p',this)">판교만</button>
+    <button class="btn" onclick="setView('c',this)">청라만</button>
+  </div>
+  <div class="toolbar-group">
+    <span class="toolbar-label">배경지도</span>
+    <button class="btn active" id="basemap-osm"    onclick="setBasemap('osm',this)">OSM</button>
+    <button class="btn"        id="basemap-vworld"  onclick="setBasemap('vworld',this)">VWorld 일반</button>
+    <button class="btn"        id="basemap-satellite" onclick="setBasemap('satellite',this)">VWorld 위성</button>
+    <button class="btn"        id="basemap-gray"   onclick="setBasemap('gray',this)">회색조</button>
+  </div>
+  <div class="toolbar-group">
+    <span class="toolbar-label">배경 불투명도</span>
+    <div class="opacity-ctrl">
+      <input type="range" id="opacity-slider" min="10" max="100" value="100" oninput="setBasemapOpacity(this.value)">
+      <span class="opacity-val" id="opacity-val">100%</span>
+    </div>
+  </div>
+  <div class="toolbar-group">
+    <span class="toolbar-label">분석 탭</span>
+    <button class="btn active" id="tab-base"      onclick="setTab('base',this)">개요</button>
+    <button class="btn"        id="tab-landuse"   onclick="setTab('landuse',this)">토지이용</button>
+    <button class="btn"        id="tab-transport" onclick="setTab('transport',this)">교통망</button>
+    <button class="btn"        id="tab-socio"     onclick="setTab('socio',this)">인구사회</button>
+  </div>
+  <div class="toolbar-group" id="iso-ctrl" style="display:none">
+    <span class="toolbar-label">등시간권</span>
+    <button class="btn active-p" id="iso-30" onclick="setIso(30)">30분</button>
+    <button class="btn"          id="iso-60" onclick="setIso(60)">60분</button>
+  </div>
+  <div class="toolbar-group" id="socio-ctrl" style="display:none">
+    <span class="toolbar-label">지표</span>
+    <button class="btn active-p" id="socio-pop" onclick="setSocio('pop')">인구</button>
+    <button class="btn"          id="socio-emp" onclick="setSocio('emp')">종사자</button>
+    <button class="btn"          id="socio-biz" onclick="setSocio('biz')">사업체</button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="side">
+    <div class="side-header"><span id="side-title">개요</span></div>
+    <div class="side-body">
+      <!-- 개요 -->
+      <div id="panel-base">
+        <div class="stat-block">
+          <div class="stat-block-title">구역 정보</div>
+          <div class="stat-row"><span class="stat-label">면적</span><div class="stat-values"><span class="stat-val p">73.9만㎡</span><span class="stat-val c">88.5만㎡</span></div></div>
+          <div class="stat-row"><span class="stat-label">핵심역</span><div class="stat-values"><span class="stat-val p" style="font-size:10px">판교역(신분당선)</span><span class="stat-val c" style="font-size:10px">청라국제도시역</span></div></div>
+        </div>
+        <div class="divider"></div>
+        <div class="stat-block">
+          <div class="stat-block-title">인구사회</div>
+          <div class="stat-row"><span class="stat-label">총 인구 (2024)</span><div class="stat-values"><span class="stat-val p">1,124명</span><span class="stat-val c">5,390명</span></div></div>
+          <div class="stat-row"><span class="stat-label">총 종사자 (2023)</span><div class="stat-values"><span class="stat-val p">85,327명</span><span class="stat-val c">1,900명</span></div></div>
+          <div class="stat-row"><span class="stat-label">사업체 수 (2023)</span><div class="stat-values"><span class="stat-val p">2,460개</span><span class="stat-val c">577개</span></div></div>
+          <div class="stat-row"><span class="stat-label">직주비</span><div class="stat-values"><span class="stat-val p">75.91</span><span class="stat-val c">0.35</span></div></div>
+        </div>
+        <div class="divider"></div>
+        <div class="stat-block">
+          <div class="stat-block-title">교통망</div>
+          <div class="stat-row"><span class="stat-label">강남까지</span><div class="stat-values"><span class="stat-val p">14분</span><span class="stat-val c">65분</span></div></div>
+          <div class="stat-row"><span class="stat-label">30분 종사자</span><div class="stat-values"><span class="stat-val p">152만명</span><span class="stat-val c">39만명</span></div></div>
+        </div>
+        <div class="divider"></div>
+        <div class="stat-block">
+          <div class="stat-block-title">토지이용</div>
+          <div class="stat-row"><span class="stat-label">주요 용도지역</span><div class="stat-values"><span class="stat-val p" style="font-size:10px">준주거 95.0%</span><span class="stat-val c" style="font-size:10px">중심상업 75.3%</span></div></div>
+          <div class="stat-row"><span class="stat-label">LUM 엔트로피</span><div class="stat-values"><span class="stat-val p">0.148</span><span class="stat-val c">0.279</span></div></div>
+        </div>
+      </div>
+
+      <!-- 토지이용 -->
+      <div id="panel-landuse" style="display:none">
+        <div class="sub-btn-group">
+          <button class="sub-btn active" id="lu-yongdo" onclick="setLanduseMode('yongdo',this)">용도지역</button>
+          <button class="sub-btn"        id="lu-bld"    onclick="setLanduseMode('bld',this)">건축물 용도</button>
+        </div>
+        <div id="legend-yongdo">
+          <div class="legend-block">
+            <div class="legend-block-title">용도지역 범례</div>
+            <div class="legend-item-row"><div class="legend-swatch" style="background:#7C83FD"></div>준주거지역</div>
+            <div class="legend-item-row"><div class="legend-swatch" style="background:#FF8A65"></div>중심상업지역</div>
+            <div class="legend-item-row"><div class="legend-swatch" style="background:#66BB6A"></div>보전녹지지역</div>
+            <div class="legend-item-row"><div class="legend-swatch" style="background:#A5D6A7"></div>자연녹지지역</div>
+            <div class="legend-item-row"><div class="legend-swatch" style="background:#CE93D8"></div>제1·2종일반주거</div>
+            <div class="legend-item-row"><div class="legend-swatch" style="background:#90A4AE"></div>공공시설·녹지</div>
+            <div class="legend-item-row"><div class="legend-swatch" style="background:#546E7A"></div>도로·하천</div>
+          </div>
+        </div>
+        <div id="legend-bld" style="display:none">
+          <div class="legend-block">
+            <div class="legend-block-title">건축물 용도 범례</div>
+            <div class="legend-item-row"><div class="legend-swatch" style="background:#4FC3F7"></div>업무(순수)</div>
+            <div class="legend-item-row"><div class="legend-swatch" style="background:#9575CD"></div>업무(오피스텔)</div>
+            <div class="legend-item-row"><div class="legend-swatch" style="background:#26A69A"></div>교육연구</div>
+            <div class="legend-item-row"><div class="legend-swatch" style="background:#FFA726"></div>근린생활</div>
+            <div class="legend-item-row"><div class="legend-swatch" style="background:#EF5350"></div>판매·상업</div>
+            <div class="legend-item-row"><div class="legend-swatch" style="background:#78909C"></div>주차·교통</div>
+            <div class="legend-item-row"><div class="legend-swatch" style="background:#37474F;opacity:.7"></div>미건축</div>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div class="stat-block">
+          <div class="stat-block-title">용도지역 구성비</div>
+          <div class="stat-row"><span class="stat-label">준주거지역</span><div class="stat-values"><span class="stat-val p">95.0%</span><span class="stat-val c">—</span></div></div>
+          <div class="stat-row"><span class="stat-label">중심상업지역</span><div class="stat-values"><span class="stat-val p">—</span><span class="stat-val c">75.3%</span></div></div>
+          <div class="stat-row"><span class="stat-label">자연녹지</span><div class="stat-values"><span class="stat-val p">2.9%</span><span class="stat-val c">3.8%</span></div></div>
+          <div class="stat-row"><span class="stat-label">도로·하천</span><div class="stat-values"><span class="stat-val p">1.8%</span><span class="stat-val c">—</span></div></div>
+          <div class="stat-row"><span class="stat-label">공공시설·녹지</span><div class="stat-values"><span class="stat-val p">—</span><span class="stat-val c">10.2%</span></div></div>
+        </div>
+        <div class="divider"></div>
+        <div class="stat-block">
+          <div class="stat-block-title">건축물 주용도 (연면적)</div>
+          <div class="stat-row"><span class="stat-label">업무(순수)</span><div class="stat-values"><span class="stat-val p">57.3%</span><span class="stat-val c">26.1%</span></div></div>
+          <div class="stat-row"><span class="stat-label">업무(오피스텔)</span><div class="stat-values"><span class="stat-val p">—</span><span class="stat-val c">56.4%</span></div></div>
+          <div class="stat-row"><span class="stat-label">교육연구</span><div class="stat-values"><span class="stat-val p">38.0%</span><span class="stat-val c">—</span></div></div>
+          <div class="stat-row"><span class="stat-label">근린생활</span><div class="stat-values"><span class="stat-val p">—</span><span class="stat-val c">8.9%</span></div></div>
+        </div>
+        <div class="divider"></div>
+        <div class="stat-block">
+          <div class="stat-block-title">토지이용 혼합도 (LUM)</div>
+          <div class="stat-row"><span class="stat-label">용도지역 기준</span><div class="stat-values"><span class="stat-val p">0.148</span><span class="stat-val c">0.279</span></div></div>
+        </div>
+        <div class="divider"></div>
+        <div class="stat-block">
+          <div class="stat-block-title">개발 실현 정도</div>
+          <div class="stat-row"><span class="stat-label">평균 용적률</span><div class="stat-values"><span class="stat-val p">336.0%</span><span class="stat-val c">464.0%</span></div></div>
+          <div class="stat-row"><span class="stat-label">미건축 필지 비율</span><div class="stat-values"><span class="stat-val p">58.7%</span><span class="stat-val c">69.6%</span></div></div>
+        </div>
+      </div>
+
+      <!-- 교통망 -->
+      <div id="panel-transport" style="display:none">
+        <div class="stat-block">
+          <div class="stat-block-title">경로선 색상 (소요시간)</div>
+          <div class="legend-item-row"><div class="legend-swatch" style="background:#00E5FF;border-radius:2px;height:4px;width:24px"></div>10분 이내</div>
+          <div class="legend-item-row"><div class="legend-swatch" style="background:#00BFA5;border-radius:2px;height:4px;width:24px"></div>20분 이내</div>
+          <div class="legend-item-row"><div class="legend-swatch" style="background:#FFD600;border-radius:2px;height:4px;width:24px"></div>30분 이내</div>
+          <div class="legend-item-row"><div class="legend-swatch" style="background:#FF6D00;border-radius:2px;height:4px;width:24px"></div>45분 이내</div>
+          <div class="legend-item-row"><div class="legend-swatch" style="background:#FF1744;border-radius:2px;height:4px;width:24px"></div>60분 이내</div>
+          <div class="legend-item-row"><div class="legend-swatch" style="background:#FFD700;border-radius:50%;width:12px;height:12px"></div>핵심역</div>
+          <div class="legend-item-row"><div class="legend-swatch" style="background:#00E676;border-radius:50%;width:10px;height:10px"></div>도달 역</div>
+        </div>
+        <div class="divider"></div>
+        <div class="stat-block">
+          <div class="stat-block-title">핵심역 접근성</div>
+          <div class="stat-row"><span class="stat-label">강남까지</span><div class="stat-values"><span class="stat-val p">14분</span><span class="stat-val c">65분</span></div></div>
+          <div class="stat-row"><span class="stat-label">서울역까지</span><div class="stat-values"><span class="stat-val p">46분</span><span class="stat-val c">43분</span></div></div>
+          <div class="stat-row"><span class="stat-label">역→구역 중심</span><div class="stat-values"><span class="stat-val p">1,045m</span><span class="stat-val c">2,605m</span></div></div>
+        </div>
+        <div class="divider"></div>
+        <div class="stat-block">
+          <div class="stat-block-title">등시간권 도달 현황</div>
+          <div class="stat-row"><span class="stat-label">30분 역 수</span><div class="stat-values"><span class="stat-val p">86개</span><span class="stat-val c">51개</span></div></div>
+          <div class="stat-row"><span class="stat-label">30분 인구</span><div class="stat-values"><span class="stat-val p">218만명</span><span class="stat-val c">103만명</span></div></div>
+          <div class="stat-row"><span class="stat-label">30분 종사자</span><div class="stat-values"><span class="stat-val p">152만명</span><span class="stat-val c">39만명</span></div></div>
+          <div class="stat-row"><span class="stat-label">60분 역 수</span><div class="stat-values"><span class="stat-val p">454개</span><span class="stat-val c">305개</span></div></div>
+          <div class="stat-row"><span class="stat-label">60분 인구</span><div class="stat-values"><span class="stat-val p">1,287만명</span><span class="stat-val c">821만명</span></div></div>
+          <div class="stat-row"><span class="stat-label">60분 종사자</span><div class="stat-values"><span class="stat-val p">564만명</span><span class="stat-val c">348만명</span></div></div>
+        </div>
+        <div class="divider"></div>
+        <div class="stat-block">
+          <div class="stat-block-title">보조 지표</div>
+          <div class="stat-row"><span class="stat-label">역세권(1km) 비율</span><div class="stat-values"><span class="stat-val p">39.8%</span><span class="stat-val c">0.0%</span></div></div>
+          <div class="stat-row"><span class="stat-label">도로망 밀도(km/km²)</span><div class="stat-values"><span class="stat-val p">4.82</span><span class="stat-val c">5.64</span></div></div>
+        </div>
+        <div class="divider"></div>
+        <div class="chart-title">누적 접근성 곡선 — 종사자(만명)</div>
+        <div class="chart-wrap"><canvas id="chart-iso"></canvas></div>
+      </div>
+
+      <!-- 인구사회 -->
+      <div id="panel-socio" style="display:none">
+        <div class="legend-block">
+          <div class="legend-block-title" id="socio-legend-title">인구 단계구분</div>
+          <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;">
+            <span style="font-size:10px;color:var(--muted)">적음</span>
+            <div style="height:10px;border-radius:3px;flex:1;background:linear-gradient(to right,rgba(79,195,247,0.08),rgba(79,195,247,1))"></div>
+            <span style="font-size:10px;color:var(--muted)">많음</span>
+          </div>
+          <div style="font-size:10px;color:var(--muted);margin-top:4px;">집계구 클릭 → 상세 정보</div>
+        </div>
+        <div class="divider"></div>
+        <div class="stat-block">
+          <div class="stat-block-title">인구·가구</div>
+          <div class="stat-row"><span class="stat-label">총 인구 (2024)</span><div class="stat-values"><span class="stat-val p">1,124명</span><span class="stat-val c">5,390명</span></div></div>
+        </div>
+        <div class="divider"></div>
+        <div class="stat-block">
+          <div class="stat-block-title">종사자·사업체</div>
+          <div class="stat-row"><span class="stat-label">총 종사자 (2023)</span><div class="stat-values"><span class="stat-val p">85,327명</span><span class="stat-val c">1,900명</span></div></div>
+          <div class="stat-row"><span class="stat-label">총 사업체 (2023)</span><div class="stat-values"><span class="stat-val p">2,460개</span><span class="stat-val c">577개</span></div></div>
+        </div>
+        <div class="divider"></div>
+        <div class="stat-block">
+          <div class="stat-block-title">직주 지표</div>
+          <div class="stat-row"><span class="stat-label">직주비</span><div class="stat-values"><span class="stat-val p">75.91</span><span class="stat-val c">0.35</span></div></div>
+          <div class="stat-row"><span class="stat-label">집계구 수</span><div class="stat-values"><span class="stat-val p">2개</span><span class="stat-val c">3개</span></div></div>
+        </div>
+        <div class="divider"></div>
+        <div class="stat-block">
+          <div class="stat-block-title">업종 구성 — 판교 (2023)</div>
+          <div class="stat-row"><span class="stat-label">정보통신업</span><span class="stat-val p">43.3%</span></div>
+          <div class="stat-row"><span class="stat-label">전문·과학·기술</span><span class="stat-val p">18.8%</span></div>
+          <div class="stat-row"><span class="stat-label">사업시설관리</span><span class="stat-val p">15.4%</span></div>
+          <div class="stat-row"><span class="stat-label">도·소매업</span><span class="stat-val p">8.3%</span></div>
+          <div class="stat-row"><span class="stat-label" style="font-size:10px">IT·R&D 합계</span><span class="stat-val p" style="font-size:13px">62.1%</span></div>
+        </div>
+        <div class="divider"></div>
+        <div class="stat-block">
+          <div class="stat-block-title">업종 구성 — 청라 (2023)</div>
+          <div class="stat-row"><span class="stat-label">건설업</span><span class="stat-val c">20.9%</span></div>
+          <div class="stat-row"><span class="stat-label">도·소매업</span><span class="stat-val c">14.9%</span></div>
+          <div class="stat-row"><span class="stat-label">숙박·음식점업</span><span class="stat-val c">14.1%</span></div>
+          <div class="stat-row"><span class="stat-label">공공행정</span><span class="stat-val c">11.2%</span></div>
+          <div class="stat-row"><span class="stat-label" style="font-size:10px">정보통신업</span><span class="stat-val c">3.5%</span></div>
+        </div>
+        <div class="divider"></div>
+        <div class="chart-title">업종별 종사자 구성비 비교</div>
+        <div class="chart-wrap" style="height:200px"><canvas id="chart-industry"></canvas></div>
+        <div class="divider"></div>
+        <div id="popup-info" style="display:none">
+          <div class="stat-block">
+            <div class="stat-block-title">선택된 집계구</div>
+            <div id="popup-content"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="maps" id="maps">
+    <div class="map-divider"></div>
+    <div class="map-wrap" id="wrap-p">
+      <div class="map-tag p">판교테크노밸리</div>
+      <div id="map-p"></div>
+    </div>
+    <div class="map-wrap" id="wrap-c">
+      <div class="map-tag c">청라국제업무·금융단지</div>
+      <div id="map-c"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const VWORLD_KEY = 'D391CFD3-3820-3A72-A927-A51D9083DE9B';
+
+const C={pangyo:'#4FC3F7',cheongna:'#FF8A65',accent:'#7C83FD'};
+const YONGDO_COLORS={'준주거지역':'#7C83FD','중심상업지역':'#FF8A65','일반상업지역':'#FFA726','보전녹지지역':'#66BB6A','자연녹지지역':'#A5D6A7','공공시설·녹지':'#90A4AE','도로·하천':'#546E7A','제1종일반주거지역':'#CE93D8','제2종일반주거지역':'#BA68C8','기타':'#37474F'};
+const YONGDO_LIST=['준주거지역','중심상업지역','일반상업지역','근린상업지역','제1종전용주거지역','제2종전용주거지역','제1종일반주거지역','제2종일반주거지역','제3종일반주거지역','보전녹지지역','자연녹지지역','생산녹지지역'];
+const BLD_COLORS={'업무(순수)':'#4FC3F7','업무(오피스텔)':'#9575CD','교육연구':'#26A69A','근린생활':'#FFA726','판매·상업':'#EF5350','주거':'#66BB6A','주차·교통':'#78909C','기타':'#607D8B'};
+
+function getYongdo(t){
+  if(!t)return '기타';
+  for(const y of YONGDO_LIST)if(t.includes(y))return y;
+  if(t.includes('도로구역')||t.includes('하천구역'))return '도로·하천';
+  if(t.includes('특별계획')||t.includes('완충녹지')||t.includes('공공공지'))return '공공시설·녹지';
+  return '기타';
+}
+
+// ── 배경지도 타일 정의 ────────────────────────────────────
+const TILES = {
+  osm: {
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attr: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    opts: {}
+  },
+  vworld: {
+    url: `https://api.vworld.kr/req/wmts/1.0.0/${VWORLD_KEY}/Base/{z}/{y}/{x}.png`,
+    attr: '© <a href="https://www.vworld.kr">VWorld</a>',
+    opts: { crossOrigin: 'anonymous' }
+  },
+  satellite: {
+    url: `https://api.vworld.kr/req/wmts/1.0.0/${VWORLD_KEY}/Satellite/{z}/{y}/{x}.jpeg`,
+    attr: '© <a href="https://www.vworld.kr">VWorld</a>',
+    opts: { crossOrigin: 'anonymous' }
+  },
+  gray: {
+    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    attr: '© CartoDB',
+    opts: {}
+  }
+};
+
+let currentBasemap = 'osm';
+let baseLayers = {}; // {p: tileLayer, c: tileLayer}
+
+// ── 지도 초기화 ──────────────────────────────────────────
+let mp = L.map('map-p', {center:[37.401,127.101], zoom:15});
+let mc = L.map('map-c', {center:[37.533,126.624], zoom:15});
+
+function createBaseTile(mapObj, type) {
+  const t = TILES[type];
+  return L.tileLayer(t.url, {attribution:t.attr, maxZoom:19, ...t.opts}).addTo(mapObj);
+}
+
+baseLayers.p = createBaseTile(mp, 'osm');
+baseLayers.c = createBaseTile(mc, 'osm');
+
+// ── 배경지도 전환 ─────────────────────────────────────────
+function setBasemap(type, btn) {
+  document.querySelectorAll('[id^="basemap-"]').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  currentBasemap = type;
+  const opacity = document.getElementById('opacity-slider').value / 100;
+  const t = TILES[type];
+  [mp, mc].forEach((map, i) => {
+    const key = i===0?'p':'c';
+    if (baseLayers[key]) { map.removeLayer(baseLayers[key]); }
+    baseLayers[key] = L.tileLayer(t.url, {attribution:t.attr, maxZoom:19, opacity, ...t.opts});
+    baseLayers[key].addTo(map);
+    // 분석 레이어를 배경 위로 올리기
+    Object.values(LY[key]).forEach(layer => { if(layer) layer.bringToFront(); });
+  });
+}
+
+// 불투명도 조절
+function setBasemapOpacity(val) {
+  document.getElementById('opacity-val').textContent = val + '%';
+  const op = val / 100;
+  if (baseLayers.p) baseLayers.p.setOpacity(op);
+  if (baseLayers.c) baseLayers.c.setOpacity(op);
+}
+
+
+
+const LY={p:{},c:{}};
+
+async function loadGeoJSON(url){
+  try{const r=await fetch(url);if(!r.ok)throw new Error(r.status);return await r.json();}
+  catch(e){console.warn('로드 실패:',url);return null;}
+}
+
+function clearLayers(keys){
+  ['p','c'].forEach(k=>{
+    const map=k==='p'?mp:mc;
+    keys.forEach(lk=>{if(LY[k][lk]){map.removeLayer(LY[k][lk]);delete LY[k][lk];}});
+  });
+}
+
+// 구역계
+async function loadBoundaries(){
+  const[gdP,gdC]=await Promise.all([loadGeoJSON('data/pangyo_tv1_final.geojson'),loadGeoJSON('data/cheongna_final2.geojson')]);
+  if(gdP) LY.p.boundary=L.geoJSON(gdP,{style:{color:C.pangyo,weight:4,fillOpacity:0,opacity:1}}).addTo(mp);
+  if(gdC) LY.c.boundary=L.geoJSON(gdC,{style:{color:C.cheongna,weight:4,fillOpacity:0,opacity:1}}).addTo(mc);
+}
+
+// 용도지역
+async function loadLanduseYongdo(){
+  clearLayers(['landuse_yongdo','landuse_bld']);
+  const[gdP,gdC]=await Promise.all([loadGeoJSON('data/landuse_pangyo.geojson'),loadGeoJSON('data/landuse_cheongna2.geojson')]);
+  const style=f=>{const y=getYongdo(f.properties?.A8||'');const col=YONGDO_COLORS[y]||'#37474F';return{color:'rgba(0,0,0,0.25)',weight:0.4,fillColor:col,fillOpacity:0.78};};
+  const onEach=(f,l)=>{const y=getYongdo(f.properties?.A8||'');l.bindPopup(`<div class="popup-title">${y}</div><div class="popup-row"><span>소재지</span><span>${f.properties?.A2||'-'}</span></div>`);};
+  if(gdP) LY.p.landuse_yongdo=L.geoJSON(gdP,{style,onEachFeature:onEach}).addTo(mp);
+  if(gdC) LY.c.landuse_yongdo=L.geoJSON(gdC,{style,onEachFeature:onEach}).addTo(mc);
+}
+
+// 건축물 용도
+async function loadLanduseBld(){
+  clearLayers(['landuse_yongdo','landuse_bld']);
+  const[gdP,gdC]=await Promise.all([loadGeoJSON('data/bld_pangyo.geojson'),loadGeoJSON('data/bld_cheongna.geojson')]);
+  const style=f=>{const yg=f.properties?.용도분류;const col=yg?BLD_COLORS[yg]||'#607D8B':'#2a2d3a';return{color:'rgba(0,0,0,0.25)',weight:0.4,fillColor:col,fillOpacity:yg?0.85:0.3};};
+  const onEach=(f,l)=>{
+    const p=f.properties;const yg=p?.용도분류||'미건축';const nm=p?.건물명||'(건물명 없음)';const fa=p?.['연면적(㎡)']?Number(p['연면적(㎡)']).toLocaleString()+'㎡':'-';
+    const far = p?.['용적률(%)'] ? Number(p['용적률(%)']).toFixed(1)+'%' : '-';
+    l.bindPopup(`<div class="popup-title">${nm}</div>
+      <div class="popup-row"><span>용도</span><span>${yg}</span></div>
+      <div class="popup-row"><span>연면적</span><span>${fa}</span></div>
+      <div class="popup-row"><span>용적률</span><span>${far}</span></div>`);
+  };
+  if(gdP) LY.p.landuse_bld=L.geoJSON(gdP,{style,onEachFeature:onEach}).addTo(mp);
+  if(gdC) LY.c.landuse_bld=L.geoJSON(gdC,{style,onEachFeature:onEach}).addTo(mc);
+}
+
+let currentLuMode='yongdo';
+async function setLanduseMode(mode,btn){
+  document.querySelectorAll('.sub-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');currentLuMode=mode;
+  document.getElementById('legend-yongdo').style.display=mode==='yongdo'?'':'none';
+  document.getElementById('legend-bld').style.display=mode==='bld'?'':'none';
+  if(mode==='yongdo') await loadLanduseYongdo();
+  else await loadLanduseBld();
+}
+
+// 핵심역 마커 아이콘
+function stationIcon(col) {
+  return L.divIcon({
+    className: '',
+    html: `<div style="
+      width:16px;height:16px;border-radius:50%;
+      background:${col};border:3px solid #fff;
+      box-shadow:0 0 0 2px ${col}, 0 2px 8px rgba(0,0,0,.5);
+    "></div>`,
+    iconSize:[16,16], iconAnchor:[8,8]
+  });
+}
+
+// 등시간권
+let currentIso=30;
+async function loadIsochrone(min){
+  clearLayers(['iso','station_marker','path_tree','station_dots']);
+  currentIso=min;
+  const[gdP,gdC]=await Promise.all([
+    loadGeoJSON(`data/isochrone_pangyo_${min}min.geojson`),
+    loadGeoJSON(`data/isochrone_cheongna_${min}min.geojson`)
+  ]);
+  if(gdP) LY.p.iso=L.geoJSON(gdP,{style:{color:C.pangyo,weight:3,fillColor:C.pangyo,fillOpacity:0.4,opacity:1}})
+    .bindPopup(`판교역 ${min}분 등시간권`).addTo(mp);
+  if(gdC) LY.c.iso=L.geoJSON(gdC,{style:{color:C.cheongna,weight:3,fillColor:C.cheongna,fillOpacity:0.4,opacity:1}})
+    .bindPopup(`청라국제도시역 ${min}분 등시간권`).addTo(mc);
+
+  // 경로 트리 레이어
+  const [ptP, ptC] = await Promise.all([
+    loadGeoJSON(`data/path_tree_pangyo_${min}min.geojson`),
+    loadGeoJSON(`data/path_tree_cheongna_${min}min.geojson`)
+  ]);
+
+  // 시간대별 색상 (채도 높임)
+  function timeColor(t) {
+    if (t <= 10) return '#00FFFF';
+    if (t <= 20) return '#00FF88';
+    if (t <= 30) return '#FFE600';
+    if (t <= 45) return '#FF6A00';
+    return '#FF0033';
+  }
+
+  // 역 포인트 아이콘 (초록)
+  function stationDotIcon() {
+    return L.divIcon({
+      className: '',
+      html: `<div style="width:8px;height:8px;border-radius:50%;background:#00E676;border:2px solid #fff;box-shadow:0 0 4px rgba(0,230,118,.8);"></div>`,
+      iconSize:[8,8], iconAnchor:[4,4]
+    });
+  }
+
+  if(ptP) {
+    LY.p.path_tree = L.geoJSON(ptP, {
+      style: f => ({
+        color: timeColor(f.properties.travel_min),
+        weight: 3, opacity: 1
+      }),
+      onEachFeature: (f,l) => {
+        l.bindTooltip(`${f.properties.statnm} (${f.properties.linenm}) — ${f.properties.travel_min.toFixed(0)}분`);
+      }
+    }).addTo(mp);
+    // 역 포인트
+    const pgNodes = {};
+    ptP.features.forEach(f => {
+      const tid = f.properties.to_id;
+      if (!pgNodes[tid]) {
+        pgNodes[tid] = {
+          statnm: f.properties.statnm,
+          linenm: f.properties.linenm,
+          travel_min: f.properties.travel_min,
+          coords: f.geometry.coordinates[f.geometry.coordinates.length - 1]
+        };
+      }
+    });
+    const pgMarkers = Object.values(pgNodes).map(n =>
+      L.marker([n.coords[1], n.coords[0]], {icon: stationDotIcon(), zIndexOffset:500})
+       .bindTooltip(`${n.statnm} (${n.linenm}) — ${n.travel_min.toFixed(0)}분`)
+    );
+    LY.p.station_dots = L.layerGroup(pgMarkers).addTo(mp);
+  }
+
+  if(ptC) {
+    LY.c.path_tree = L.geoJSON(ptC, {
+      style: f => ({
+        color: timeColor(f.properties.travel_min),
+        weight: 3, opacity: 1
+      }),
+      onEachFeature: (f,l) => {
+        l.bindTooltip(`${f.properties.statnm} (${f.properties.linenm}) — ${f.properties.travel_min.toFixed(0)}분`);
+      }
+    }).addTo(mc);
+    const chNodes = {};
+    ptC.features.forEach(f => {
+      const tid = f.properties.to_id;
+      if (!chNodes[tid]) {
+        chNodes[tid] = {
+          statnm: f.properties.statnm,
+          linenm: f.properties.linenm,
+          travel_min: f.properties.travel_min,
+          coords: f.geometry.coordinates[f.geometry.coordinates.length - 1]
+        };
+      }
+    });
+    const chMarkers = Object.values(chNodes).map(n =>
+      L.marker([n.coords[1], n.coords[0]], {icon: stationDotIcon(), zIndexOffset:500})
+       .bindTooltip(`${n.statnm} (${n.linenm}) — ${n.travel_min.toFixed(0)}분`)
+    );
+    LY.c.station_dots = L.layerGroup(chMarkers).addTo(mc);
+  }
+
+  // 핵심역 마커 (금색, 최상위)
+  LY.p.station_marker = L.marker([37.3946, 127.1112], {icon: stationIcon('#FFD700'), zIndexOffset:2000})
+    .bindPopup('<div class="popup-title">판교역 (신분당선)</div><div class="popup-row"><span>강남까지</span><span>14분</span></div><div class="popup-row"><span>30분 종사자</span><span>152만명</span></div>')
+    .addTo(mp);
+  LY.c.station_marker = L.marker([37.5565, 126.6246], {icon: stationIcon('#FFD700'), zIndexOffset:2000})
+    .bindPopup('<div class="popup-title">청라국제도시역 (공항철도)</div><div class="popup-row"><span>강남까지</span><span>65분</span></div><div class="popup-row"><span>30분 종사자</span><span>39만명</span></div>')
+    .addTo(mc);
+
+  // 레이어 순서: 폴리곤 → 경로선 → 역점 → 핵심역
+  if(LY.p.iso) LY.p.iso.bringToFront();
+  if(LY.c.iso) LY.c.iso.bringToFront();
+  if(LY.p.station_marker) LY.p.station_marker.bringToFront();
+  if(LY.c.station_marker) LY.c.station_marker.bringToFront();
+}
+
+// 인구사회
+let currentSocio='pop';
+const SOCIO_LABEL={pop:'인구',emp:'종사자',biz:'사업체'};
+async function loadSocio(field){
+  clearLayers(['socio']);currentSocio=field;
+  document.getElementById('socio-legend-title').textContent=SOCIO_LABEL[field]+' 단계구분';
+  const[gdP,gdC]=await Promise.all([loadGeoJSON('data/oa_pangyo_inner.geojson'),loadGeoJSON('data/oa_cheongna_inner.geojson')]);
+  function makeLayer(gd,map,col){
+    if(!gd)return null;
+    const vals=gd.features.map(f=>f.properties[field]||0);
+    const maxV=Math.max(...vals)||1;
+    return L.geoJSON(gd,{
+      style:f=>{const v=f.properties[field]||0;const r=Math.min(v/maxV,1);return{color:'#fff',weight:1.5,fillColor:col,fillOpacity:0.1+r*0.8};},
+      onEachFeature:(f,l)=>{
+        const p=f.properties;
+        l.on('click',()=>{
+          document.getElementById('popup-info').style.display='block';
+          document.getElementById('popup-content').innerHTML=`
+            <div class="stat-row"><span class="stat-label">집계구</span><span style="font-size:10px;color:var(--muted)">${p.TOT_OA_CD||'-'}</span></div>
+            <div class="stat-row"><span class="stat-label">인구 (2024)</span><span style="font-weight:600">${(p.pop||0).toLocaleString()}명</span></div>
+            <div class="stat-row"><span class="stat-label">종사자 (2023)</span><span style="font-weight:600">${(p.emp||0).toLocaleString()}명</span></div>
+            <div class="stat-row"><span class="stat-label">사업체 (2023)</span><span style="font-weight:600">${(p.biz||0).toLocaleString()}개</span></div>`;
+        });
+        l.bindTooltip(`${SOCIO_LABEL[field]}: ${(p[field]||0).toLocaleString()}`);
+      }
+    }).addTo(map);
+  }
+  LY.p.socio=makeLayer(gdP,mp,C.pangyo);
+  LY.c.socio=makeLayer(gdC,mc,C.cheongna);
+}
+
+// 탭 전환
+let currentTab='base';
+async function setTab(tab,btn){
+  document.querySelectorAll('[id^="tab-"]').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  ['base','landuse','transport','socio'].forEach(p=>document.getElementById('panel-'+p).style.display=p===tab?'':'none');
+  document.getElementById('iso-ctrl').style.display=tab==='transport'?'':'none';
+  document.getElementById('socio-ctrl').style.display=tab==='socio'?'':'none';
+  const titles={base:'개요',landuse:'토지이용 분석',transport:'교통망 분석',socio:'인구사회 분석'};
+  document.getElementById('side-title').textContent=titles[tab];
+  clearLayers(['landuse_yongdo','landuse_bld','iso','socio','station_marker','path_tree','station_dots']);
+  currentTab=tab;
+  if(tab==='landuse'){
+    currentLuMode='yongdo';
+    document.querySelectorAll('.sub-btn').forEach((b,i)=>b.classList.toggle('active',i===0));
+    document.getElementById('legend-yongdo').style.display='';
+    document.getElementById('legend-bld').style.display='none';
+    await loadLanduseYongdo();
+  }
+  if(tab==='transport') await loadIsochrone(currentIso);
+  if(tab==='socio') await loadSocio(currentSocio);
+}
+
+async function setIso(min){
+  document.getElementById('iso-30').className='btn'+(min===30?' active-p':'');
+  document.getElementById('iso-60').className='btn'+(min===60?' active-p':'');
+  await loadIsochrone(min);
+}
+
+async function setSocio(field){
+  ['pop','emp','biz'].forEach(f=>document.getElementById('socio-'+f).className='btn'+(f===field?' active-p':''));
+  await loadSocio(field);
+}
+
+function setView(view,btn){
+  document.querySelectorAll('.toolbar-group:first-child .btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const maps=document.getElementById('maps');
+  const wp=document.getElementById('wrap-p'),wc=document.getElementById('wrap-c');
+  if(view==='split'){maps.className='maps';wp.style.display=wc.style.display='';}
+  else if(view==='p'){maps.className='maps single';wp.style.display='';wc.style.display='none';}
+  else{maps.className='maps single';wp.style.display='none';wc.style.display='';}
+  setTimeout(()=>{mp.invalidateSize();mc.invalidateSize();},150);
+}
+
+function initIndustryChart(){
+  const ctx=document.getElementById('chart-industry');if(!ctx)return;
+  const labels=['정보통신업','전문·과학·기술','사업시설관리','도·소매업','건설업','공공행정','숙박·음식점','기타'];
+  new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        {label:'판교테크노밸리',data:[43.3,18.8,15.4,8.3,2.3,0.2,2.9,8.8],backgroundColor:'rgba(79,195,247,0.75)',borderRadius:3},
+        {label:'청라국제업무·금융단지',data:[3.5,3.2,2.8,14.9,20.9,11.2,14.1,29.4],backgroundColor:'rgba(255,138,101,0.75)',borderRadius:3},
+      ]
+    },
+    options:{
+      indexAxis:'y',
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:10}}}},
+      scales:{
+        x:{title:{display:true,text:'비율(%)',font:{size:10}},max:50},
+        y:{ticks:{font:{size:9}}}
+      }
+    }
+  });
+}
+
+function initChart(){
+  Chart.defaults.color='#8B90A0';Chart.defaults.borderColor='#2e3248';
+  const ctx=document.getElementById('chart-iso');if(!ctx)return;
+  new Chart(ctx,{type:'line',data:{labels:[5,10,15,20,25,30,35,40,45,50,55,60],datasets:[
+    {label:'판교역',data:[12.2,20.6,46.0,64.1,111.2,151.7,193.4,273.0,366.2,444.2,514.9,563.9],borderColor:C.pangyo,backgroundColor:C.pangyo+'33',fill:true,tension:0.4,pointRadius:2,borderWidth:2},
+    {label:'청라국제도시역',data:[2.2,2.2,3.4,14.3,23.8,39.1,58.2,90.9,142.6,207.7,276.0,348.2],borderColor:C.cheongna,backgroundColor:C.cheongna+'33',fill:true,tension:0.4,pointRadius:2,borderWidth:2},
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:10}}}},scales:{x:{title:{display:true,text:'소요시간(분)',font:{size:10}}},y:{title:{display:true,text:'종사자(만명)',font:{size:10}}}}}});
+}
+
+window.addEventListener('load',async()=>{
+  await loadBoundaries();
+  initChart();
+  initIndustryChart();
+});
+</script>
+</body>
+</html>

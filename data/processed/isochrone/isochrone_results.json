@@ -1,0 +1,158 @@
+{
+  "pangyo": {
+    "station_name": "판교역(신분당선)",
+    "label": "판교테크노밸리",
+    "cumulative": [
+      {
+        "time": 5,
+        "n_stations": 2,
+        "pop": 78504,
+        "emp": 121553
+      },
+      {
+        "time": 10,
+        "n_stations": 7,
+        "pop": 202698,
+        "emp": 206180
+      },
+      {
+        "time": 15,
+        "n_stations": 17,
+        "pop": 502238,
+        "emp": 460461
+      },
+      {
+        "time": 20,
+        "n_stations": 26,
+        "pop": 725816,
+        "emp": 640926
+      },
+      {
+        "time": 25,
+        "n_stations": 51,
+        "pop": 1370434,
+        "emp": 1111552
+      },
+      {
+        "time": 30,
+        "n_stations": 86,
+        "pop": 2181626,
+        "emp": 1517046
+      },
+      {
+        "time": 35,
+        "n_stations": 125,
+        "pop": 3289696,
+        "emp": 1933515
+      },
+      {
+        "time": 40,
+        "n_stations": 170,
+        "pop": 4657964,
+        "emp": 2730181
+      },
+      {
+        "time": 45,
+        "n_stations": 241,
+        "pop": 6275564,
+        "emp": 3661867
+      },
+      {
+        "time": 50,
+        "n_stations": 336,
+        "pop": 8923064,
+        "emp": 4441543
+      },
+      {
+        "time": 55,
+        "n_stations": 393,
+        "pop": 10700724,
+        "emp": 5148804
+      },
+      {
+        "time": 60,
+        "n_stations": 454,
+        "pop": 12873502,
+        "emp": 5639163
+      }
+    ]
+  },
+  "cheongna": {
+    "station_name": "청라국제도시역(공항철도)",
+    "label": "청라국제업무·금융단지",
+    "cumulative": [
+      {
+        "time": 5,
+        "n_stations": 2,
+        "pop": 20240,
+        "emp": 21605
+      },
+      {
+        "time": 10,
+        "n_stations": 3,
+        "pop": 25136,
+        "emp": 22140
+      },
+      {
+        "time": 15,
+        "n_stations": 7,
+        "pop": 82562,
+        "emp": 33607
+      },
+      {
+        "time": 20,
+        "n_stations": 17,
+        "pop": 259680,
+        "emp": 143435
+      },
+      {
+        "time": 25,
+        "n_stations": 31,
+        "pop": 604016,
+        "emp": 238338
+      },
+      {
+        "time": 30,
+        "n_stations": 51,
+        "pop": 1032406,
+        "emp": 390868
+      },
+      {
+        "time": 35,
+        "n_stations": 66,
+        "pop": 1639484,
+        "emp": 581541
+      },
+      {
+        "time": 40,
+        "n_stations": 89,
+        "pop": 2608446,
+        "emp": 909395
+      },
+      {
+        "time": 45,
+        "n_stations": 131,
+        "pop": 3773566,
+        "emp": 1426271
+      },
+      {
+        "time": 50,
+        "n_stations": 195,
+        "pop": 5998120,
+        "emp": 2077061
+      },
+      {
+        "time": 55,
+        "n_stations": 248,
+        "pop": 7041046,
+        "emp": 2759798
+      },
+      {
+        "time": 60,
+        "n_stations": 305,
+        "pop": 8212260,
+        "emp": 3481735
+      }
+    ]
+  }
+}
