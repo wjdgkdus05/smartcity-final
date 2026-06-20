@@ -8,7 +8,9 @@
 
 ## 프로젝트 개요
 
-성공 사례로 많이 언급되는 **판교테크노밸리**와 조성은 완료되었으나 장기 미활성화 상태인 **청라국제업무·금융단지**를 대상으로, 공공데이터 기반 비교분석 시스템을 구축하고 업무지구 성공요인을 데이터 근거와 함께 도출하고자 함 
+수도권 최고의 성공 사례로 꼽히는 **판교테크노밸리**와 조성은 완료되었으나 장기 미활성화 상태인 **청라국제업무·금융단지**를 대상으로, 공공데이터 기반 비교분석 시스템을 구축하고 업무지구 성공요인을 데이터 근거와 함께 도출한다.
+
+청라국제업무·금융단지는 청라 개발계획 안내도상 국제업무단지와 국제금융단지가 인접하여 형성하는 업무·금융 기능권을 분석 범위로 정의하였다.
 
 ---
 
@@ -16,9 +18,13 @@
 
 | 구분 | 판교테크노밸리 | 청라국제업무·금융단지 |
 |---|---|---|
-| 면적 | 597,304㎡ | 884,942㎡ |
+| 면적 | 738,829㎡ | 884,942㎡ |
+| 공식 면적과의 오차 | 약 11.7% (공식 사업면적 661,157㎡) | - |
 | 핵심역 | 판교역 (신분당선) | 청라국제도시역 (공항철도) |
-| 구역계 출처 | 공식 배치도 기반 직접 디지타이징 | 청라개발계획안내도(2025) 기반 직접 디지타이징 |
+| 핵심역-구역중심 거리 | 1,045m | 2,605m |
+| 구역계 출처 | 판교테크노밸리 공식 홈페이지 자료실(용도지역 결정도면) 기반 직접 디지타이징 | 청라 개발계획 안내도(인천경제자유구역청, IFEZ) 기반 직접 디지타이징 |
+
+> 본 구역계는 위성영상·공식 도면 기반 수동 디지타이징 결과로, 공식 고시 면적과 일부 오차가 있을 수 있다. 자세한 산정 근거 및 참고 도면은 보고서 부록 4, 5 참고.
 
 ---
 
@@ -28,35 +34,35 @@
 |---|---|---|
 | 집계구 경계 SHP | SGIS 통계지리정보서비스 | 2025년 2분기 |
 | 집계구 인구 | SGIS 통계지리정보서비스 | 2024년 |
-| 집계구 종사자·사업체 | SGIS 전국사업체조사 | 2023년 |
-| 용도지역 SHP | VWorld 토지이용계획공간정보 | 2026-04-12 기준 |
-| 건축물대장 | 건축데이터 민간개방시스템 (건축HUB) | 2026년 4월 기준 |
-| 연속지적도 | 국가공간정보포털 (nsdi.go.kr) | 2026년 5월 기준 |
-| 지하철 네트워크 | 수업 제공 subway_network.zip | 2026-06-15 기준 |
-| 도로망 | OpenStreetMap (osmnx) | 2026년 6월 수집 |
+| 집계구 종사자·사업체 | SGIS 전국사업체조사 (산업분류 10차 대분류) | 2023년 |
+| 용도지역 SHP | VWorld 토지이용계획공간정보 | 2026년 4월 |
+| 건축물대장 | 건축데이터 민간개방시스템 (건축HUB) | 2026년 4월 |
+| 연속지적도(PNU) | VWorld 연속지적도 | 2026년 5월 |
+| 지하철 네트워크 | 수업 제공 subway_network.zip | 2026년 6월 15일 |
+| 도로망 | OpenStreetMap (osmnx) | 2026년 6월 |
 | 베이스맵 | VWorld WMTS, OpenStreetMap, CartoDB | - |
 
 ---
 
-## 분석 지표
+## 분석 지표 및 핵심 결과
 
 ### 토지이용
-- 용도지역 구성비 (VWorld 용도지역 SHP)
-- 건축물 주용도 구성비 (건축물대장 + 연속지적도 PNU 조인)
-- 토지이용 혼합도 (LUM 엔트로피)
-- 개발 실현 정도 (평균 용적률, 미건축 필지 비율)
+- 용도지역 구성비 — 판교 준주거지역 95.0%, 청라 중심상업지역 75.3%
+- 건축물 주용도 구성비 — 판교 업무+교육연구 95.3%, 청라 업무(오피스텔) 56.4%+업무(순수) 26.1%
+- 토지이용 혼합도(LUM, 정규화 섀넌 엔트로피) — 판교 0.135, 청라 0.144
+- 개발 실현 정도 — 평균 용적률(판교 336.0%, 청라 464.0%), 미건축 필지 비율(판교 58.7%, 청라 69.6%)
 
 ### 교통망
 - 30분·60분 등시간권 (다익스트라, subway_network.zip)
-- 등시간권 내 도달 인구·종사자 (등시간권 × SGIS 집계구 공간결합)
-- 누적 접근성 곡선 (5분 단위)
-- 역세권 면적 비율 (핵심역 1km 버퍼)
-- 도로망 밀도 (OSM, osmnx)
+- 등시간권 내 도달 인구·종사자 — 30분 종사자 판교 152만명 vs 청라 39만명(3.9배)
+- 누적 접근성 곡선 (5분 단위) — 15분 종사자 격차 13.7배(최대 격차 구간)
+- 역세권 면적 비율(핵심역 1km 버퍼) — 판교 39.8%, 청라 0.0%
+- 도로망 밀도(OSM, osmnx) — 판교 4.82km/km², 청라 5.64km/km²
 
 ### 인구사회
-- 구역 내 인구·종사자·사업체 (집계구 centroid 기준 선택 후 클리핑)
-- 직주비 (종사자수 / 상주인구)
-- 업종(산업분류 10차 대분류) 구성
+- 구역 내 인구·종사자·사업체 (구역계와 교차하는 집계구 선택 후 합산)
+- 직주비(종사자수 / 상주인구) — 판교 75.91, 청라 0.35
+- 업종(산업분류 10차 대분류) 구성 — 판교 IT·R&D 관련 62.1%, 청라 건설업·공공행정 중심
 
 ---
 
@@ -65,8 +71,8 @@
 ```
 data/raw/              ← 원본 데이터 (git 추적 제외)
 data/processed/        ← 전처리 결과
-web/data/              ← 웹사이트용 경량화 GeoJSON
-scripts/               ← 전처리 스크립트
+data/ (루트)           ← 웹사이트(GitHub Pages)용 경량화 GeoJSON
+scripts/                ← 전처리 스크립트
 ```
 
 ### 주요 스크립트
@@ -74,54 +80,71 @@ scripts/               ← 전처리 스크립트
 | 스크립트 | 설명 |
 |---|---|
 | `scripts/process_sgis.py` | 집계구 경계 + 인구·종사자 통합 |
-| `scripts/process_landuse.py` | 용도지역 SHP 클리핑 |
-| `scripts/analyze_landuse.py` | 용도지역 구성비·LUM 산출 |
-| `scripts/analyze_buildings_cheongna.py` | 건축물 용도 분류 (오피스텔 분리) |
+| `scripts/merge_pangyo.py` | 판교 구역계 멀티폴리곤 병합 |
+| `scripts/reclip_landuse_pangyo.py` | 용도지역 SHP 재클리핑 |
+| `scripts/analyze_landuse.py` | 용도지역 구성비 산출 |
+| `scripts/lum_normalized.py` | 정규화 LUM 엔트로피 산출 |
+| `scripts/rebuild_bld.py` / `analyze_buildings_cheongna.py` | 건축물 용도 분류(오피스텔 분리), PNU 조인 |
 | `scripts/isochrone_analysis.py` | 다익스트라 등시간권 분석 |
 | `scripts/make_isochrone.py` | 등시간권 폴리곤 생성 (역 3km 버퍼 합집합) |
 | `scripts/make_path_tree.py` | 최단경로 트리 시각화용 선 생성 |
 | `scripts/analyze_auxiliary.py` | 역세권 면적비율·도로망 밀도 |
 | `scripts/analyze_industry.py` | 업종(산업분류) 구성 분석 |
-| `scripts/fix_oa.py` | 집계구 구역계 클리핑 |
+| `scripts/fixoa2.py` | 집계구-구역계 공간단위 통합(intersects+clip) |
 
 ### 공간단위 통합 처리
 
-집계구 경계와 분석 구역계가 일치하지 않는 문제를 다음과 같이 처리하였음
-집계구 centroid가 구역계 내부에 위치하는 집계구를 선택하고, 선택된 집계구를 구역계로 클리핑하여 경계부 오차를 제거
+집계구 경계와 분석 구역계가 일치하지 않는 문제는, 구역계와 조금이라도 겹치는(intersects) 집계구를 모두 선택한 후 해당 집계구의 통계값을 합산하는 방식으로 처리하였다. 면적 비례 배분은 적용하지 않았으며, 이로 인해 경계부 집계구의 통계값이 과대 계상될 수 있다는 한계가 있다. 절대적 수치보다 두 지역 간 상대적 비교 및 비율 지표(직주비 등) 해석에 중점을 두었다.
 
 ---
 
 ## AI 활용 내역
 
-본 프로젝트는 Claude를 활용해 다음 작업을 수행함
+본 프로젝트는 Claude(Anthropic)를 활용하여 다음 작업을 수행하였다.
 
 - 데이터 전처리 스크립트 작성 (Python/GeoPandas)
 - 다익스트라 등시간권 분석 코드 작성
-- 웹사이트 (HTML/CSS/JavaScript/Leaflet.js) 코드 작성
+- 웹사이트(HTML/CSS/JavaScript/Leaflet.js) 코드 작성
+- 분석 결과 해석 및 보고서 문장 초안 작성 보조
 
-구역계 정의·데이터 수집·분석 결과 검증·보고서 최종 서술은 본인이 직접 수행하였으며, AI 생성 코드의 정확성 검증 책임은 본인에게 있음
+구역계 정의, 데이터 수집, 분석 결과 검증, 보고서 최종 서술은 본인이 직접 수행하였으며, AI가 생성한 코드와 문장의 정확성 검증 책임은 본인에게 있다.
 
 ---
 
 ## 시스템 구조
 
 ```
-index.html
+index.html                          ← 메인 웹사이트
 data/
-  pangyo_tv1_final.geojson
-  cheongna_final2.geojson
-  landuse_pangyo.geojson
-  landuse_cheongna2.geojson
-  bld_pangyo.geojson
-  bld_cheongna.geojson
-  isochrone_pangyo_30min.geojson
-  isochrone_pangyo_60min.geojson
-  isochrone_cheongna_30min.geojson
-  isochrone_cheongna_60min.geojson
-  path_tree_pangyo_30min.geojson
-  path_tree_pangyo_60min.geojson
-  path_tree_cheongna_30min.geojson
-  path_tree_cheongna_60min.geojson
-  oa_pangyo_inner.geojson
-  oa_cheongna_inner.geojson
+  pangyo_tv1_final.geojson          ← 판교 구역계
+  cheongna_final2.geojson           ← 청라국제업무·금융단지 구역계
+  landuse_pangyo.geojson            ← 판교 용도지역
+  landuse_cheongna2.geojson         ← 청라 용도지역
+  bld_pangyo.geojson                ← 판교 건축물 주용도(연면적·용적률 포함)
+  bld_cheongna.geojson              ← 청라 건축물 주용도(연면적·용적률 포함)
+  isochrone_pangyo_30min.geojson    ← 판교 30분 등시간권
+  isochrone_pangyo_60min.geojson    ← 판교 60분 등시간권
+  isochrone_cheongna_30min.geojson  ← 청라 30분 등시간권
+  isochrone_cheongna_60min.geojson  ← 청라 60분 등시간권
+  path_tree_pangyo_30min.geojson    ← 판교 핵심역 기준 최단경로 트리(30분)
+  path_tree_pangyo_60min.geojson    ← 판교 핵심역 기준 최단경로 트리(60분)
+  path_tree_cheongna_30min.geojson  ← 청라 핵심역 기준 최단경로 트리(30분)
+  path_tree_cheongna_60min.geojson  ← 청라 핵심역 기준 최단경로 트리(60분)
+  oa_pangyo_inner.geojson           ← 판교 구역 내 집계구(인구·종사자·사업체)
+  oa_cheongna_inner.geojson         ← 청라 구역 내 집계구(인구·종사자·사업체)
 ```
+
+### 주요 기능 (시스템 요구사항 §4 대응)
+
+| 기능 | 구현 위치 |
+|---|---|
+| 지도 기반 시각화 (구역 경계 + 필지/건축물 단위 컬러맵, 나란히/전환 보기) | 토지이용 탭 |
+| 등시간권 레이어 (30분/60분 전환, 도달 인구·종사자 표시) | 교통망 탭 |
+| 통계 패널 (영역별 비교 표·차트) | 사이드패널 + 차트(누적 접근성 곡선, 업종 구성비) |
+| 상호작용 (필지/건축물 클릭 시 주용도·연면적·용적률 표출) | 토지이용 탭, 인구사회 탭(집계구 클릭) |
+
+---
+
+## 로컬 실행 방법
+
+별도 서버·DB 불필요. 정적 사이트이므로 VS Code Live Server 등으로 `index.html`을 열어 실행한다. GeoJSON 파일 로드 시 CORS 정책으로 인해 로컬에서는 반드시 로컬 서버(Live Server 등)를 통해 실행해야 한다.
